@@ -20,6 +20,8 @@ def mqtt_on_connect(client, userdata, flags, rc):
 	global config
 	print("==================>>>>>> MQTT Connected with result code "+str(rc))
 	client.subscribe(config["tempSensorTopic"])
+	mqttClient.publish(config['relCoolerTopic'], '0')
+	mqttClient.publish(config['relFanTopic'], '0')
 
 def setupMqtt():
 	global config
