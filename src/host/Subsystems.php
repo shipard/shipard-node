@@ -367,7 +367,7 @@ class Subsystems extends \Shipard\host\Core
 
 		$c .= "server {\n";
 		$c .= "\tlisten $httpsPort ssl http2;\n";
-		if ($this->app->nodeCfg['cfg']['ipv6Enabled'])
+		if ($this->app->nodeCfg['cfg']['ipv6Enabled'] ?? 0)
 			$c .= "\tlisten [::]:$httpsPort ssl http2;\n";
 		$c .= "\tserver_name $serverName;\n";
 		$c .= "\troot /var/www/shipard-node;\n";
