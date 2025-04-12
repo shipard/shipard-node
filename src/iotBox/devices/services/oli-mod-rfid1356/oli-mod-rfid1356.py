@@ -5,6 +5,8 @@ import serial
 import json
 import paho.mqtt.client as mqtt
 import keyboard
+from subprocess import call
+from time import sleep
 
 config = None
 mqttClient = None
@@ -61,12 +63,17 @@ def readingLoop ():
 		rfidValue = read_chars[1:-2]
 		if (1):
 			rfidValue = "".join(reversed([rfidValue[i:i+2] for i in range(0, len(rfidValue), 2)]))
+		if ('buzzerGPIO' in config):
+			call("echo 1 > /sys/class/gpio/gpio"+config['buzzerGPIO']+"/value", shell = True)
 		print(rfidValue)
 		if (config['mqttMode']):
 			mqttClient.publish(config['mqttTopic'], rfidValue)
 		if (config['keyboardMode']):
 			keyboard.write(rfidValue, exact = True)
 			keyboard.send("enter")
+		if ('buzzerGPIO' in config):
+			sleep(0.20)
+			call("echo 0 > /sys/class/gpio/gpio"+config['buzzerGPIO']+"/value", shell = True)
 
 def main():
 	global config
@@ -76,6 +83,9 @@ def main():
 		return
 	if (config['mqttMode']):
 		setupMqtt()
+	if ('buzzerGPIO' in config):
+		call("echo "+config['buzzerGPIO']+" > /sys/class/gpio/export", shell = True)
+		call("echo out > /sys/class/gpio/gpio"+config['buzzerGPIO']+"/direction", shell = True)
 	setupSerial()
 	readingLoop()
 
