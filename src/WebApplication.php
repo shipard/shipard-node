@@ -247,6 +247,14 @@ class WebApplication extends \Shipard\Application
 		return $this->error(404, 'Not found');
 	}
 
+	protected function cameraSnapshot ()
+	{
+		$cs = new \Shipard\cameras\CameraSnapshot($this);
+		$cs->init();
+		$cs->download();
+		return '';
+	}
+
 	public function control ()
 	{
 		$postDataStr = $this->postData();
@@ -417,7 +425,8 @@ class WebApplication extends \Shipard\Application
 
 		switch ($this->cmd)
 		{
-			case 'lc-ssh':	return $this->lcSSH();
+			case 'lc-ssh':					return $this->lcSSH();
+			case 'camera-snapshot':	return $this->cameraSnapshot();
 		}
 
 		$this->error(404, 'Not found!');
