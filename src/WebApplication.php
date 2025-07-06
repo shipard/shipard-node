@@ -55,11 +55,13 @@ class WebApplication extends \Shipard\Application
 			$this->nodeTokens = [];
 	}
 
-	protected function error ($status, $msg)
+	public function error ($status, $msg)
 	{
 		//header ('X-Frame-Options: SAMEORIGIN');
 		header("HTTP/1.1 " . $status.' '.$msg);
 		echo ("ERROR ".$status.': '.$msg);
+
+		return FALSE;
 	}
 
 	public function postData ()
@@ -77,11 +79,11 @@ class WebApplication extends \Shipard\Application
 		return $data;
 	}
 
-	public function sendJson ($data)
+	public function sendJson ($data, int $status = 200)
 	{
 		//header ('X-Frame-Options: SAMEORIGIN');
 		header ("Content-type: " . 'application/json');
-		header ("HTTP/1.1 200 OK");
+		header ("HTTP/1.1 $status OK");
 
 		$callback = '';
 		if (isset($_GET['callback']))
@@ -328,6 +330,12 @@ class WebApplication extends \Shipard\Application
 		return $rg->sendContent();
 	}
 
+	public function papi ()
+	{
+		$pa = new \Shipard\papi\PublicApi($this);
+		return $pa->run();
+	}
+
 	public function remotePrint ()
 	{
 		$fn = 'rp-' . time() . '-' . mt_rand(100000, 999999) . '.rawprint';
@@ -367,7 +375,7 @@ class WebApplication extends \Shipard\Application
 		exec ($cmd);
 	}
 
-	protected function getAllHeaders()
+	public function getAllHeaders()
 	{
 		$headers = [];
 		foreach ($_SERVER as $name => $value)
@@ -418,6 +426,8 @@ class WebApplication extends \Shipard\Application
 			case 'lans':		return $this->lans();
 			case 'control':	return $this->control();
 			case 'rg':			return $this->rg();
+			case 'feed':		return $this->papi();
+			case 'papi':		return $this->papi();
 		}
 
 		if (!in_array($this->authToken, $this->nodeTokens))
