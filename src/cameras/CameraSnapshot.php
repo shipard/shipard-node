@@ -59,7 +59,8 @@ class CameraSnapshot
 
     $url = $this->snapshotUrl();
 
-    copy($url, $dstFileName);
+    $cmd = 'wget "'.$url.'" -O '.$dstFileName;
+    exec($cmd);
 
     $imgPath = $this->app->urlRoot.'/'.$dstFileName;
     header('Content-type: ' . 'image/jpeg');
