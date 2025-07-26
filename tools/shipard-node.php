@@ -44,6 +44,14 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	public function downloadCerts()
+	{
+		$cm = new \Shipard\host\CertsDownloader($this);
+		$cm->run();
+
+		return TRUE;
+	}
+
 	public function cfgInit ()
 	{
 		$serverId = intval($this->arg('server-id'));
@@ -514,6 +522,8 @@ class NodeApp extends \Shipard\Application
 			case	'netdata-alarms-api-on':	return $this->netDataAlarmsApiOn();
 
 			case	'esigns-images':				return $this->esignsImages();
+
+			case	'download-certs':    		return $this->downloadCerts();
 
 			case	'version':							return $this->version();
 		}
