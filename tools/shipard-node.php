@@ -423,6 +423,9 @@ class NodeApp extends \Shipard\Application
 	{
 		$eng = new \Shipard\incus\IncusSync($this);
 
+		$run = intval($this->arg('run'));
+		$eng->run = $run;
+
 		if (!$eng->init())
 			return FALSE;
 

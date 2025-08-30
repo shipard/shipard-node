@@ -12,6 +12,8 @@ class IncusSync extends \Shipard\host\Core
 	var $syncCfg = NULL;
 	var $now;
 
+	var $run = 0;
+	var $defaultStorage = '';
 	var $syncId = '';
 	var $logFileName = '';
 
@@ -32,6 +34,7 @@ class IncusSync extends \Shipard\host\Core
 
 	protected function sync()
 	{
+		$this->defaultStorage = $this->syncCfg['storage'] ?? '';
 		if (!isset($this->syncCfg['remotes']))
 			return;
 
@@ -48,7 +51,7 @@ class IncusSync extends \Shipard\host\Core
 
 		foreach ($remote['instances'] as $instance)
 		{
-			$storage = 'default';
+			$storage = $this->defaultStorage;
 			if (isset($remote['storage']))
 				$storage = $remote['storage'];
 			if (isset($instance['storage']))
@@ -56,13 +59,19 @@ class IncusSync extends \Shipard\host\Core
 
 			$idFrom = $remote['id'].':'.$instance['id'];
 			$idTo = $instance['id'];
-			$params = '--stateless --refresh --refresh-exclude-older --quiet';
-			$params .= ' --storage='.$storage;
+			$params = '--stateless --refresh --quiet';
+			$params .= ' --refresh-exclude-older';
+			if ($storage !== '')
+				$params .= ' --storage='.$storage;
 
-			$cmd = 'incus copy '.$idFrom.' '.$idTo.' '.$params.' >> '.$this->logFileName.' 2>&1';
-
-			//echo $cmd."\n";
-			passthru($cmd);
+			$cmd = 'incus copy '.$idFrom.' '.$idTo.' '.$params;
+			if ($this->run)
+			{
+				$cmd .= ' >> '.$this->logFileName.' 2>&1';
+				passthru($cmd);
+			}
+			else
+			  echo $cmd."\n";
 		}
 	}
 
