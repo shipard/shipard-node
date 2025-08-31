@@ -51,6 +51,12 @@ class IncusSync extends \Shipard\host\Core
 
 		foreach ($remote['instances'] as $instance)
 		{
+			$paused = intval($this->syncCfg['paused'] ?? 0);
+			if (isset($remote['paused']))
+				$paused = intval($remote['paused']);
+			if (isset($instance['paused']))
+				$paused = intval($instance['paused']);
+
 			$storage = $this->defaultStorage;
 			if (isset($remote['storage']))
 				$storage = $remote['storage'];
@@ -68,7 +74,11 @@ class IncusSync extends \Shipard\host\Core
 			if ($this->run)
 			{
 				$cmd .= ' >> '.$this->logFileName.' 2>&1';
-				passthru($cmd);
+				if (!$paused)
+				{
+					passthru($cmd);
+					sleep(10);
+				}
 			}
 			else
 			  echo $cmd."\n";
