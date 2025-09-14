@@ -146,7 +146,8 @@ class NodeApp extends \Shipard\Application
 
 		$localBackupDir = $this->cfgItem($this->serverCfg, 'localBackupDir', "/var/lib/shipard-node/backups");
 		$thisLocalBackupDir = $localBackupDir . '/' . date ('Y-m-d');
-		mkdir ($thisLocalBackupDir, 0770, TRUE);
+		if (!is_dir($thisLocalBackupDir))
+			mkdir ($thisLocalBackupDir, 0770, TRUE);
 
 		// -- /etc
 		exec ("cd / && tar -Pczf $thisLocalBackupDir/etc-$thisHostName-" . date ('Y-m-d') . ".tgz /etc/");
@@ -165,11 +166,6 @@ class NodeApp extends \Shipard\Application
 
 		exec ("chown -R $localBackupOwner $thisLocalBackupDir");
 
-		// -- remove backup week ago
-		$thisLocalBackupDir = $localBackupDir . '/' . date ('Y-m-d', strtotime('-1 week'));
-		if (is_dir($thisLocalBackupDir))
-			exec ('rm -rf '.$thisLocalBackupDir);
-
 		// -- upload to server
 		$remoteBackupUser = $this->cfgItem($this->serverCfg, 'remoteBackupUser', '');
 		if ($remoteBackupUser !== '')
@@ -183,6 +179,11 @@ class NodeApp extends \Shipard\Application
 			$uploadCmd = "scp $thisLocalBackupDir/* {$remoteBackupUser}@{$remoteBackupHost}:/$remoteThisBackupDir";
 			exec($uploadCmd);
 		}
+
+		// -- remove backup week ago
+		$thisLocalBackupDir = $localBackupDir . '/' . date ('Y-m-d', strtotime('-1 week'));
+		if (is_dir($thisLocalBackupDir))
+			exec ('rm -rf '.$thisLocalBackupDir);
 	}
 
 	public function serverUpgrade ()
