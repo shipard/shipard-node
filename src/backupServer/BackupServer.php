@@ -90,7 +90,7 @@ class BackupServer extends \Shipard\host\Core
 		}
 	}
 
-	protected function downloadNodeServers()
+	public function downloadNodeServers()
 	{
 		if (!isset($this->backupCfg['nodeServers']))
 			return;

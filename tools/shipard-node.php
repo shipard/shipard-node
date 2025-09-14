@@ -138,10 +138,10 @@ class NodeApp extends \Shipard\Application
 	public function serverBackup ()
 	{
 		$thisHostName = $this->cfgItem($this->serverCfg, 'thisHostName', gethostname());
-		$localBackupOwner = 'root:root';
-		if (is_dir ('/home/johns'))
+		$localBackupOwner = $this->cfgItem($this->serverCfg, 'localBackupOwner', 'root:root');
+		if ($localBackupOwner === 'root:root' && is_dir ('/home/johns'))
 			$localBackupOwner = 'johns:root';
-		elseif (is_dir ('/home/js') || is_dir ('/var/lib/e10/js'))
+		elseif ($localBackupOwner === 'root:root' && (is_dir ('/home/js') || is_dir ('/var/lib/e10/js')))
 			$localBackupOwner = 'js:root';
 
 		$localBackupDir = $this->cfgItem($this->serverCfg, 'localBackupDir', "/var/lib/shipard-node/backups");
@@ -171,16 +171,16 @@ class NodeApp extends \Shipard\Application
 			exec ('rm -rf '.$thisLocalBackupDir);
 
 		// -- upload to server
-		if (0)
+		$remoteBackupUser = $this->cfgItem($this->serverCfg, 'remoteBackupUser', '');
+		if ($remoteBackupUser !== '')
 		{
-			$backupUser = $this->cfgItem($this->serverCfg, 'backupUser', '');
-			$backupHost = $this->cfgItem($this->serverCfg, 'backupHost', '');
-			$remoteBackupDir = $this->cfgItem($this->serverCfg, 'remoteBackupDir', "/home/{$backupUser}/backups");
+			$remoteBackupHost = $this->cfgItem($this->serverCfg, 'remoteBackupHost', '');
+			$remoteBackupDir = $this->cfgItem($this->serverCfg, 'remoteBackupDir', "/var/lib/shipard-node/backups");
 
-			$remoteThisBackupDir = $remoteBackupDir . '/' . date('Y/m/d');
-			$uploadCmd = "ssh -l {$backupUser} {$backupHost} mkdir -p $remoteThisBackupDir";
+			$remoteThisBackupDir = $remoteBackupDir . '/' . date('Y-m-d').'/'.$thisHostName;
+			$uploadCmd = "ssh -l {$remoteBackupUser} {$remoteBackupHost} mkdir -p $remoteThisBackupDir";
 			exec($uploadCmd);
-			$uploadCmd = "scp $thisLocalBackupDir/* {$backupUser}@{$backupHost}:/$remoteThisBackupDir";
+			$uploadCmd = "scp $thisLocalBackupDir/* {$remoteBackupUser}@{$remoteBackupHost}:/$remoteThisBackupDir";
 			exec($uploadCmd);
 		}
 	}
@@ -379,6 +379,18 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	protected function bkpSrvDownloadNodes()
+	{
+		$server = $this->arg('server');
+
+		$eng = new \Shipard\backupServer\BackupServer($this);
+		if ($server)
+			$eng->server = $server;
+		$eng->init();
+		$eng->downloadNodeServers();
+		return TRUE;
+	}
+
 	protected function bkpSrvCheckAtts()
 	{
 		$eng = new \Shipard\backupServer\BackupServer($this);
@@ -515,6 +527,7 @@ class NodeApp extends \Shipard\Application
 			case	'iot-box-info':					return $this->iotBoxInfo();
 
 			case	'bkpsrv-download':			return $this->bkpSrvDownload();
+			case	'bkpsrv-download-nodes':return $this->bkpSrvDownloadNodes();
 			case	'bkpsrv-check-atts':		return $this->bkpSrvCheckAtts();
 			case	'bkpsrv-repair-atts':		return $this->bkpSrvRepairAtts();
 
