@@ -119,6 +119,32 @@ class BackupServer extends \Shipard\host\Core
 		$cmd = "scp -r -P $port {$remoteUser}@$hostName:$hostBackupDir/{$this->dateStr}/* $localDestDir";
 		echo $cmd . "\n";
 		passthru($cmd);
+
+		// -- remove old backups
+		$oldDate = new \DateTime();
+		$oldDate->modify('-7 days');
+		$oldDateStr = $oldDate->format('Y-m-d');
+		$oldLocalDestDir = $this->backupCfg['destFolder'].'nodeServers/'.$hostName.'/'.$oldDateStr;
+
+		$oldDay = intval($oldDate->format('d'));
+		if (is_dir($oldLocalDestDir))
+		{
+			$oldDay = intval($oldDate->format('d'));
+			if ($oldDay === 1)
+			{ // archive
+				$archiveDestDir = $this->backupCfg['destFolder'].'nodeServers/'.$hostName.'/'.'archive/'.$oldDate->format('Y');
+				if (!is_dir($archiveDestDir))
+					mkdir ($archiveDestDir, 0750, TRUE);
+				$cmd = "mv $oldLocalDestDir $archiveDestDir/";
+				//echo $cmd . "\n";
+				passthru($cmd);
+				return;
+			}
+			else
+			{ // remove
+				exec ('rm -rf '.$oldLocalDestDir);
+			}
+		}
 	}
 
 	protected function hostRemoteUser($h)

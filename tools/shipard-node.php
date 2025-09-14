@@ -160,6 +160,10 @@ class NodeApp extends \Shipard\Application
 		if (is_dir('/opt/shn-exts'))
 			exec ("cd / && tar -Pczf $thisLocalBackupDir/opt-shn-exts-$thisHostName-" . date ('Y-m-d') . ".tgz /opt/shn-exts/");
 
+		// -- /root/.ssh
+		if (is_dir('/root/.ssh'))
+			exec ("cd / && tar -Pczf $thisLocalBackupDir/root-ssh-$thisHostName-" . date ('Y-m-d') . ".tgz /root/.ssh");
+
 		// -- /var/lib/shipard-node/lc/ssh
 		if (is_dir('/var/lib/shipard-node/lc/ssh'))
 			exec ("cd / && tar -Pczf $thisLocalBackupDir/lcssh-$thisHostName-" . date ('Y-m-d') . ".tgz /var/lib/shipard-node/lc/ssh/");
