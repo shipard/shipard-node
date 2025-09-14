@@ -246,6 +246,47 @@ class LanControlHost
 				echo $allMacsStr."\n";
 		}
 	}
+
+	public function backupAllDevices()
+	{
+		$allDevices = $this->app->lanControlDeviceCfg(NULL);
+		if (!$allDevices)
+			return;
+
+		$dateNow = new \DateTime();
+		$destDir = '/var/lib/shipard-node/lc/backups/'.$dateNow->format('Y-m-d/H-i-s');
+		if (!is_dir($destDir))
+			mkdir($destDir, 0770, TRUE);
+
+		foreach ($allDevices as $deviceNdx => $deviceCfg)
+		{
+			if (!isset($deviceCfg['ipManagement']))
+				continue;
+
+			if (!isset($deviceCfg['macDeviceType']))
+				continue;
+			if ($deviceCfg['macDeviceType'] !== 'router-mikrotik' && $deviceCfg['macDeviceType'] !== 'ad-edgecore' /*&& $deviceCfg['macDeviceType'] !== 'ad-mikrotik'*/)
+				continue;
+
+			if ($this->app->debug)
+				echo '==== backup device '.$deviceCfg['id'].': '.$deviceCfg['ipManagement']." ====\n";
+
+			/** @var \Shipard\lanControl\devices\LanControlDeviceCore $d */
+			$d = $this->createDevice($deviceNdx);
+			if (!$d)
+			{
+				continue;
+			}
+
+			$backupData = [];
+			$d->backupDevice($backupData, $destDir);
+		}
+
+		// -- remove old backups
+		$oldBackupDir = '/var/lib/shipard-node/lc/backups/'.date('Y-m-d', strtotime('-3 days'));
+		if (is_dir($oldBackupDir))
+			exec ('rm -rf '.$oldBackupDir);
+	}
 }
 
 

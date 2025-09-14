@@ -172,6 +172,10 @@ class NodeApp extends \Shipard\Application
 		if (is_dir('/var/lib/shipard-node/lc/ssh'))
 			exec ("cd / && tar -Pczf $thisLocalBackupDir/lcssh-$thisHostName-" . date ('Y-m-d') . ".tgz /var/lib/shipard-node/lc/ssh/");
 
+		// -- /var/lib/shipard-node/lc/backups
+		if (is_dir('/var/lib/shipard-node/lc/backups'))
+			exec ("cd / && tar -Pczf $thisLocalBackupDir/lc-backups-$thisHostName-" . date ('Y-m-d') . ".tgz /var/lib/shipard-node/lc/backups/");
+
 		exec ("chown -R $localBackupOwner $thisLocalBackupDir");
 
 		// -- upload to server
@@ -303,6 +307,13 @@ class NodeApp extends \Shipard\Application
 	{
 		$eng = new \Shipard\lanControl\LanControlHost($this);
 		$eng->runAllRequests();
+		return TRUE;
+	}
+
+	public function lanBackupDevices()
+	{
+		$eng = new \Shipard\lanControl\LanControlHost($this);
+		$eng->backupAllDevices();
 		return TRUE;
 	}
 
@@ -526,6 +537,8 @@ class NodeApp extends \Shipard\Application
 
 			case	'lan-control-get':			return $this->lanControlGet();
 			case	'lan-control-requests':	return $this->lanControlRequests();
+
+			case	'lan-backup-devices':		return $this->lanBackupDevices();
 
 			case	'lan-monitoring-get-dashboards':	return $this->lanMonitoringGetDashboards();
 			case	'lan-monitoring-get-snmp-cfg':		return $this->lanMonitoringGetSnmpCfg();

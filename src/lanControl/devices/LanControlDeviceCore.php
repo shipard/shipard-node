@@ -110,6 +110,38 @@ class LanControlDeviceCore
 		return $runningConfig;
 	}
 
+	public function backupDevice(&$backup, $destDir)
+	{
+		$this->initFileNames('getRunningConfig');
+		$shellCmd = $this->shellCommand('getRunningConfig');
+		if ($shellCmd === '')
+			return;
+
+		if ($this->app->debug)
+			echo '   - CMD: '.$shellCmd."\n";
+
+		$this->runCommand('getRunningConfig', $shellCmd);
+
+		$errors = $this->cmdResults['getRunningConfig']['errors'];
+		$dataStr = $this->cmdResults['getRunningConfig']['data'];
+
+		$backup['cmd'] = $shellCmd;
+		$backup['errors'] = $errors;
+		$backup['runningConfig'] = $this->polishRunningConfig($dataStr);
+
+		$fn = $destDir.'/'.$this->deviceCfg['id'].'_'.$this->deviceCfg['ndx'].'.json';
+		file_put_contents($fn, json_encode($backup, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+		$fn = $destDir.'/'.$this->deviceCfg['id'].'_'.$this->deviceCfg['ndx'].'.cfg';
+		file_put_contents($fn, $backup['runningConfig']);
+
+		if ($backup['errors'] !== '')
+		{
+			$fn = $destDir.'/'.$this->deviceCfg['id'].'_'.$this->deviceCfg['ndx'].'.err';
+			file_put_contents($fn, $backup['errors']);
+		}
+	}
+
 	function getDeviceInfo(&$info)
 	{
 		$this->initFileNames('getDeviceInfo');
