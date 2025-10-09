@@ -500,6 +500,26 @@ class NodeApp extends \Shipard\Application
 		echo $this->versionInfo['version']."\n";
 	}
 
+	protected function wpxCfgGet()
+	{
+		$wpx = new \Shipard\host\WpxManager($this);
+		if (!$wpx->init())
+			return FALSE;
+		$wpx->downloadConfig();
+
+		return TRUE;
+	}
+
+	protected function wpxCfgApply()
+	{
+		$wpx = new \Shipard\host\WpxManager($this);
+		if (!$wpx->init())
+			return FALSE;
+		$wpx->applyConfig();
+
+		return TRUE;
+	}
+
 	public function run ()
 	{
 		//if (!$this->superuser())
@@ -562,6 +582,9 @@ class NodeApp extends \Shipard\Application
 			case	'esigns-images':				return $this->esignsImages();
 
 			case	'download-certs':    		return $this->downloadCerts();
+
+			case	'wpx-cfg-get':    			return $this->wpxCfgGet();
+			case	'wpx-cfg-apply':    		return $this->wpxCfgApply();
 
 			case	'version':							return $this->version();
 		}
