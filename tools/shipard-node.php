@@ -423,6 +423,18 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	protected function bkpSrvUpdateDirAll()
+	{
+		$dryRun = 1;
+		$doRun = intval($this->arg('run'));
+		if ($doRun)
+			$dryRun = 0;
+		$eng = new \Shipard\backupServer\BackupServer($this);
+		$eng->init();
+		$eng->updateDirStructAll($dryRun);
+		return TRUE;
+	}
+
 	protected function bkpVMSBackup()
 	{
 		$eng = new \Shipard\backupVMS\BackupVMS($this);
@@ -554,6 +566,7 @@ class NodeApp extends \Shipard\Application
 			case	'bkpsrv-download':			return $this->bkpSrvDownload();
 			case	'bkpsrv-download-nodes':return $this->bkpSrvDownloadNodes();
 			case	'bkpsrv-update-dir':		return $this->bkpSrvUpdateDir();
+			case	'bkpsrv-update-dir-all':return $this->bkpSrvUpdateDirAll();
 
 			case	'bkpvms-backup':				return $this->bkpVMSBackup();
 			case	'incus-sync':						return $this->incusSync();

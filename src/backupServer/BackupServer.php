@@ -189,10 +189,9 @@ class BackupServer extends \Shipard\host\Core
 
 	public function updateDirStruct($dryRun = 1)
 	{
-		//$dateActive = new \DateTime('40 days ago');
-		//$dateActiveStr = $dateActive->format('Y-m-d');
 		$maxLastFilesCnt = 40;
 		$lastFilesCnt = 0;
+		$cntOps = 0;
 
 		$dir = '';
 
@@ -257,6 +256,8 @@ class BackupServer extends \Shipard\host\Core
 						echo ': '.$cmd;
 					}
 
+					$cntOps++;
+
 					if ($cmd !== '' && !$dryRun)
 						passthru($cmd);
 
@@ -269,6 +270,7 @@ class BackupServer extends \Shipard\host\Core
 					echo '--- '.$cmd . "\n";
 					if (!$dryRun)
 						passthru($cmd);
+					$cntOps++;
 				}
 				else
 				{
@@ -283,10 +285,38 @@ class BackupServer extends \Shipard\host\Core
 				echo '=== '.$cmd . "\n";
 				if (!$dryRun)
 					passthru($cmd);
+				$cntOps++;
 			}
 		}
 
 		if ($dryRun)
-			echo "### DRY RUN - no changes made. use --run to execute ###\n";
+			echo "### OPS: {$cntOps} - DRY RUN - no changes made. use --run to execute ###\n";
+
+		return $cntOps;
+	}
+
+	public function updateDirStructAll($dryRun = 1)
+	{
+		$dsDirs = glob('*', GLOB_ONLYDIR);
+		$cntUpdated = 0;
+		$maxUpdatedCcnt = 10;
+		$cwd = getcwd();
+		forEach ($dsDirs as $dsDir)
+		{
+			echo "### Data source: $dsDir ###\n";
+
+			chdir($dsDir);
+			$cntOps = $this->updateDirStruct($dryRun);
+			chdir($cwd);
+
+			if ($cntOps)
+				$cntUpdated++;
+
+			if ($cntUpdated >= $maxUpdatedCcnt)
+			{
+				echo "### MAXIMUM UPDATED DATA SOURCES REACHED ($maxUpdatedCcnt), STOPPING ###\n";
+				break;
+			}
+		}
 	}
 }
