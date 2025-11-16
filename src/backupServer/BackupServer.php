@@ -9,7 +9,6 @@ class BackupServer extends \Shipard\host\Core
 {
 	var $backupCfg = NULL;
 	var $dateStr = '';
-	var $dateStrDir = '';
 	var $server = '';
 
 	public function init()
@@ -18,7 +17,6 @@ class BackupServer extends \Shipard\host\Core
 
 		$dateNow = new \DateTime();
 		$this->dateStr = $dateNow->format('Y-m-d');
-		$this->dateStrDir = $dateNow->format('Y/m/d');
 	}
 
 	protected function downloadDataSources()
@@ -65,7 +63,7 @@ class BackupServer extends \Shipard\host\Core
 		// -- databases
 		foreach ($backupInfo['dataSources'] as $backup)
 		{
-			$dsDestDir = $this->backupCfg['destFolder'].'dataSources/'.$backup['dsid'].'/'.$this->dateStrDir;
+			$dsDestDir = $this->backupCfg['destFolder'].'dataSources/'.$backup['dsid'];
 			if (!is_dir($dsDestDir))
 				mkdir ($dsDestDir, 0750, TRUE);
 
@@ -187,5 +185,108 @@ class BackupServer extends \Shipard\host\Core
 	{
 		$this->downloadDataSources();
 		$this->downloadNodeServers();
+	}
+
+	public function updateDirStruct($dryRun = 1)
+	{
+		//$dateActive = new \DateTime('40 days ago');
+		//$dateActiveStr = $dateActive->format('Y-m-d');
+		$maxLastFilesCnt = 40;
+		$lastFilesCnt = 0;
+
+		$dir = '';
+
+		$years = glob($dir . '????', GLOB_ONLYDIR);
+		rsort($years);
+		forEach ($years as $yearDir)
+		{
+			if ($yearDir == 'sync' || intval($yearDir) != $yearDir)
+				continue;
+
+			$allYearOK = 1;
+			$months = glob($yearDir.'/??', GLOB_ONLYDIR);
+			rsort($months);
+			forEach ($months as $monthDir)
+			{
+				$allMonthOK = 1;
+				$firstInMonth = 1;
+				$days = glob($monthDir.'/??', GLOB_ONLYDIR);
+				rsort($days);
+				forEach ($days as $dayDir)
+				{
+					echo $dayDir;
+					$files = glob ($dayDir.'/*.tgz');
+
+					if (count($files) === 0)
+					{
+						echo " - no files!\n";
+						$allMonthOK = 0;
+						continue;
+					}
+					elseif (count($files) !== 1)
+					{
+						echo " - too many files!\n";
+						$allMonthOK = 0;
+						continue;
+					}
+
+					$dateStr = str_replace('/', '-', $dayDir);
+					$date = new \DateTime($dateStr);
+					$archiveDay = intval($date->format('d'));
+
+					$cmd = '';
+					if ($lastFilesCnt < $maxLastFilesCnt)
+					{
+						$cmd = "mv $dayDir/* . && rmdir $dayDir";
+						echo ': '.$cmd;
+						$lastFilesCnt++;
+					}
+					elseif ($firstInMonth || $archiveDay === 15)
+					{
+						$archiveDestDir = $dir.'archive/'.$date->format('Y');
+						if (!is_dir($archiveDestDir))
+							mkdir ($archiveDestDir, 0750, TRUE);
+
+						$cmd = "mv $dayDir/* $archiveDestDir/ && rmdir $dayDir";
+						echo ': '.$cmd;
+						$firstInMonth = 0;
+					}
+					else
+					{
+						$cmd = "rm -rf $dayDir";
+						echo ': '.$cmd;
+					}
+
+					if ($cmd !== '' && !$dryRun)
+						passthru($cmd);
+
+					echo "\n";
+				}
+				if ($allMonthOK)
+				{
+					// -- remove month dir
+					$cmd = "rmdir $monthDir";
+					echo '--- '.$cmd . "\n";
+					if (!$dryRun)
+						passthru($cmd);
+				}
+				else
+				{
+					echo "--- month NOT OK: $monthDir\n";
+					$allYearOK = 0;
+				}
+			}
+			if ($allYearOK)
+			{
+				// -- remove year dir
+				$cmd = "rmdir $yearDir";
+				echo '=== '.$cmd . "\n";
+				if (!$dryRun)
+					passthru($cmd);
+			}
+		}
+
+		if ($dryRun)
+			echo "### DRY RUN - no changes made. use --run to execute ###\n";
 	}
 }

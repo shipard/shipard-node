@@ -411,32 +411,15 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
-	protected function bkpSrvCheckAtts()
+	protected function bkpSrvUpdateDir()
 	{
+		$dryRun = 1;
+		$doRun = intval($this->arg('run'));
+		if ($doRun)
+			$dryRun = 0;
 		$eng = new \Shipard\backupServer\BackupServer($this);
-
-		$server = $this->arg('server');
-		if ($server)
-			$eng->server = $server;
-		$dsId = $this->arg('dsId');
-		if ($dsId)
-			$eng->dsId = $dsId;
-
-		$checkPeriod = $this->arg('checkPeriod');
-		if ($checkPeriod)
-			$eng->checkPeriod = $checkPeriod;
-
 		$eng->init();
-		$eng->bkpSrvCheckAtts();
-		return TRUE;
-	}
-
-	protected function	bkpSrvRepairAtts()
-	{
-		$eng = new \Shipard\backupServer\BackupServer($this);
-
-		$eng->init();
-		$eng->bkpSrvRepairAtts();
+		$eng->updateDirStruct($dryRun);
 		return TRUE;
 	}
 
@@ -570,8 +553,7 @@ class NodeApp extends \Shipard\Application
 
 			case	'bkpsrv-download':			return $this->bkpSrvDownload();
 			case	'bkpsrv-download-nodes':return $this->bkpSrvDownloadNodes();
-			case	'bkpsrv-check-atts':		return $this->bkpSrvCheckAtts();
-			case	'bkpsrv-repair-atts':		return $this->bkpSrvRepairAtts();
+			case	'bkpsrv-update-dir':		return $this->bkpSrvUpdateDir();
 
 			case	'bkpvms-backup':				return $this->bkpVMSBackup();
 			case	'incus-sync':						return $this->incusSync();
