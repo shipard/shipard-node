@@ -1,4 +1,6 @@
 {
-	"version": "2.2.1"
+	"dependencies": {
+		"ftp-srv": "^4.6.2",
+		"memorystream": "^0.3.1"
+	}
 }
-
