@@ -101,6 +101,10 @@ class ShipardEmailDelivery extends \Shipard\Utility
 			return true;
 		}
 
+		// Mirror: copy selected data sources to the new Shipard (temporary test feature).
+		// Config: /etc/shipard-node/shipard-email-mirror.json - best-effort, never blocks primary delivery.
+		$this->mirror($msgCfg);
+
 		if (!$this->prepareHostingInfo($msgCfg))
 			return false;
 
@@ -209,6 +213,92 @@ class ShipardEmailDelivery extends \Shipard\Utility
 
 		return true;
 	}
+
+	// ===== BEGIN mirror (temporary: copy incoming mail to the new Shipard) =====
+
+	protected function mirror(array &$msgCfg)
+	{
+		try
+		{
+			$cfg = $this->app->loadCfgFile('/etc/shipard-node/shipard-email-mirror.json');
+			if (!$cfg || empty($cfg['enabled']) || empty($cfg['rules']))
+				return;
+
+			$ruleKey = strtolower($this->dstAddressID);
+			if (!isset($cfg['rules'][$ruleKey]))
+				return;
+
+			$targets = $cfg['rules'][$ruleKey];
+			if (!is_array($targets))
+				$targets = [$targets];
+
+			$smtpUrl = isset($cfg['smtpUrl']) ? $cfg['smtpUrl'] : 'smtp://ns-mail.shpd.dev:25';
+			$envelopeFrom = isset($cfg['envelopeFrom']) ? $cfg['envelopeFrom'] : 'mirror@shpd.dev';
+
+			foreach ($targets as $target)
+			{
+				$rcpt = $this->buildMirrorRcpt((string)$target);
+				$ok = $this->sendMirrorCopy($msgCfg, $smtpUrl, $envelopeFrom, $rcpt);
+				$this->addLogMsg($msgCfg, 'MIRROR '.($ok ? 'OK' : 'FAIL').' '.$ruleKey.' -> '.$rcpt);
+			}
+		}
+		catch (\Throwable $e)
+		{
+			$this->addLogMsg($msgCfg, 'MIRROR EXCEPTION: '.$e->getMessage());
+		}
+	}
+
+	protected function buildMirrorRcpt(string $target): string
+	{
+		if ($this->dstAddressSubID === '')
+			return $target;
+
+		$at = strrpos($target, '@');
+		if ($at === false)
+			return $target;
+
+		$local = substr($target, 0, $at);
+		$domain = substr($target, $at);
+
+		return $local.'--'.$this->dstAddressSubID.$domain;
+	}
+
+	protected function sendMirrorCopy(array &$msgCfg, string $smtpUrl, string $from, string $rcpt): bool
+	{
+		$emlFile = $msgCfg['emlFileName'];
+		if (!is_file($emlFile))
+			return false;
+
+		$fp = fopen($emlFile, 'r');
+		if ($fp === false)
+			return false;
+
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $smtpUrl);
+		curl_setopt($ch, CURLOPT_MAIL_FROM, '<'.$from.'>');
+		curl_setopt($ch, CURLOPT_MAIL_RCPT, ['<'.$rcpt.'>']);
+		curl_setopt($ch, CURLOPT_UPLOAD, true);
+		curl_setopt($ch, CURLOPT_INFILE, $fp);
+		curl_setopt($ch, CURLOPT_INFILESIZE, filesize($emlFile));
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+		curl_setopt($ch, CURLOPT_USE_SSL, CURLUSESSL_TRY);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+
+		$result = curl_exec($ch);
+		$ok = ($result !== false);
+		if (!$ok)
+			$this->addLogMsg($msgCfg, 'MIRROR curl error: '.curl_error($ch));
+
+		curl_close($ch);
+		fclose($fp);
+
+		return $ok;
+	}
+
+	// ===== END mirror =====
 
 	protected function detectUploadURL(array &$msgCfg)
 	{
